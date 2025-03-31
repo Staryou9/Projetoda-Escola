@@ -18,6 +18,8 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { useState, useRef } from "react";
+import { Loader2, Upload } from "lucide-react";
 
 interface BookFormProps {
   book?: Book;
@@ -40,10 +42,17 @@ type BookFormValues = z.infer<typeof bookFormSchema>;
 export default function BookForm({ book, isOpen, onClose }: BookFormProps) {
   const { toast } = useToast();
   const isEditing = !!book;
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(book?.capa || null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Definir valores padrão para o formulário
   const defaultValues: Partial<BookFormValues> = isEditing
-    ? { ...book }
+    ? { 
+        ...book,
+        capa: book.capa || "", // Garantir que capa é string
+        descricao: book.descricao || "", // Garantir que descricao é string
+      }
     : {
         titulo: "",
         autor: "",
@@ -92,6 +101,72 @@ export default function BookForm({ book, isOpen, onClose }: BookFormProps) {
     },
   });
 
+  // Mutação para upload de capa
+  const uploadMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("capa", file);
+      
+      const response = await fetch("/api/books/upload-cover", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error("Erro ao fazer upload da imagem");
+      }
+      
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      form.setValue("capa", data.path);
+      setPreviewUrl(data.path);
+      setUploadingImage(false);
+      toast({
+        title: "Upload realizado",
+        description: "A imagem da capa foi carregada com sucesso."
+      });
+    },
+    onError: (error: Error) => {
+      setUploadingImage(false);
+      toast({
+        title: "Erro no upload",
+        description: error.message || "Ocorreu um erro ao fazer upload da imagem.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Função para lidar com a seleção de arquivo
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      const file = event.target.files[0];
+      // Verificar se é uma imagem
+      if (!file.type.startsWith("image/")) {
+        toast({
+          title: "Formato inválido",
+          description: "Por favor, selecione um arquivo de imagem válido (JPEG, PNG, etc).",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Verificar o tamanho (máximo 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Arquivo muito grande",
+          description: "O tamanho máximo permitido é de 5MB.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      setUploadingImage(true);
+      uploadMutation.mutate(file);
+    }
+  };
+  
   // Handler para submissão do formulário
   const onSubmit = (values: BookFormValues) => {
     bookMutation.mutate(values);
@@ -174,10 +249,52 @@ export default function BookForm({ book, isOpen, onClose }: BookFormProps) {
                 name="capa"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>URL da Capa</FormLabel>
+                    <FormLabel>Capa do Livro</FormLabel>
                     <FormControl>
-                      <Input placeholder="https://exemplo.com/imagem.jpg" {...field} />
+                      <Input 
+                        placeholder="/uploads/capa.jpg" 
+                        {...field} 
+                        value={field.value || ""}
+                        className="hidden"
+                      />
                     </FormControl>
+                    <div className="mt-2">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        ref={fileInputRef}
+                        onChange={handleFileSelect}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingImage}
+                        className="w-full"
+                      >
+                        {uploadingImage ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Enviando...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="mr-2 h-4 w-4" />
+                            Enviar Imagem
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    {previewUrl && (
+                      <div className="mt-2 relative h-[100px] w-full overflow-hidden rounded-md border">
+                        <img 
+                          src={previewUrl} 
+                          alt="Pré-visualização da capa" 
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -236,7 +353,8 @@ export default function BookForm({ book, isOpen, onClose }: BookFormProps) {
                     <Textarea 
                       placeholder="Descreva o livro brevemente" 
                       rows={3} 
-                      {...field} 
+                      {...field}
+                      value={field.value || ""}
                     />
                   </FormControl>
                   <FormMessage />

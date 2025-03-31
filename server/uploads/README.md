@@ -1,0 +1,1 @@
+Este diretório armazena os arquivos de capa dos livros carregados pelos usuários.

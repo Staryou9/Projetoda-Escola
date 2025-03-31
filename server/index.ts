@@ -1,10 +1,26 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import fileUpload from "express-fileupload";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// Para substituir o __dirname em ambiente de módulos ES
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Configurar o middleware de upload de arquivos
+app.use(fileUpload({
+  createParentPath: true,
+  limits: { fileSize: 5 * 1024 * 1024 }, // limite de 5MB
+}));
+
+// Servir arquivos estáticos do diretório uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use((req, res, next) => {
   const start = Date.now();

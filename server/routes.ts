@@ -5,6 +5,14 @@ import { setupAuth } from "./auth";
 import { insertBookSchema, insertLoanSchema, insertUserSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
+import { UploadedFile } from "express-fileupload";
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
+
+// Para substituir o __dirname em ambiente de módulos ES
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Middleware para verificar se o usuário está autenticado
 function isAuthenticated(req: Request, res: Response, next: Function) {
@@ -279,6 +287,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(returnedLoan);
     } catch (error) {
       res.status(500).json({ message: "Erro ao processar devolução" });
+    }
+  });
+
+  // Rota para upload de capa de livro
+  app.post("/api/books/upload-cover", isLibrarian, async (req, res) => {
+    try {
+      if (!req.files || Object.keys(req.files).length === 0) {
+        return res.status(400).json({ message: "Nenhum arquivo enviado" });
+      }
+
+      const coverFile = req.files.capa as UploadedFile;
+      const fileName = `capa_${Date.now()}${path.extname(coverFile.name)}`;
+      const uploadPath = path.join(__dirname, 'uploads', fileName);
+
+      // Mover o arquivo para o diretório de uploads
+      await coverFile.mv(uploadPath);
+
+      // Retornar o caminho relativo para o cliente
+      const relativePath = `/uploads/${fileName}`;
+      res.json({ path: relativePath });
+    } catch (error) {
+      console.error('Erro no upload:', error);
+      res.status(500).json({ message: "Erro ao fazer upload da capa" });
     }
   });
 
