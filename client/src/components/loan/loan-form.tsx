@@ -69,7 +69,7 @@ export default function LoanForm({ isOpen, onClose }: LoanFormProps) {
       const loanData = {
         userId: Number(values.userId),
         bookId: Number(values.bookId),
-        dataDevolucaoPrevista: dueDate,
+        dataDevolucaoPrevista: dueDate.toISOString(),
         status: "aprovado" // Como é o bibliotecário criando, já aprova automaticamente
       };
       

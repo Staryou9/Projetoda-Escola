@@ -45,7 +45,12 @@ export const loans = pgTable("loans", {
 // Schemas de inserção
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 export const insertBookSchema = createInsertSchema(books).omit({ id: true });
-export const insertLoanSchema = createInsertSchema(loans).omit({ id: true, dataEmprestimo: true });
+export const insertLoanSchema = createInsertSchema(loans)
+  .omit({ id: true, dataEmprestimo: true })
+  .extend({
+    // Garantir que a string ISO da data seja convertida para Date
+    dataDevolucaoPrevista: z.string().transform((str) => new Date(str)),
+  });
 
 // Types
 export type User = typeof users.$inferSelect;

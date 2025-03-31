@@ -26,7 +26,7 @@ export default function BookCard({ book, onEdit }: BookCardProps) {
       const res = await apiRequest("POST", "/api/loans", {
         userId: user?.id,
         bookId: book.id,
-        dataDevolucaoPrevista: dueDate,
+        dataDevolucaoPrevista: dueDate.toISOString(),
       });
       return await res.json();
     },
