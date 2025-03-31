@@ -46,6 +46,8 @@ export default function BookForm({ book, isOpen, onClose }: BookFormProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(book?.capa || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  console.log("BookForm recebeu props:", { book, isEditing });
+
   // Definir valores padrão para o formulário
   const defaultValues: Partial<BookFormValues> = isEditing
     ? { 
@@ -65,6 +67,7 @@ export default function BookForm({ book, isOpen, onClose }: BookFormProps) {
       };
 
   // Configurar o form
+  console.log("Valores padrão para o formulário:", defaultValues);
   const form = useForm<BookFormValues>({
     resolver: zodResolver(bookFormSchema),
     defaultValues,

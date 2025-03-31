@@ -36,6 +36,7 @@ export default function LibrarianBooks() {
 
   // Abrir formulário para editar livro existente
   const handleEditBook = (book: Book) => {
+    console.log("Editando livro:", book);
     setEditingBook(book);
     setIsBookFormOpen(true);
   };
@@ -47,7 +48,7 @@ export default function LibrarianBooks() {
   };
 
   // Obter categorias únicas para o filtro
-  const categories = [...new Set(books.map(book => book.categoria))];
+  const categories = Array.from(new Set(books.map(book => book.categoria)));
 
   // Filtrar e ordenar livros
   const filteredBooks = books.filter(book => {
