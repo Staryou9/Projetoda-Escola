@@ -18,7 +18,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Loader2, Upload } from "lucide-react";
 
 interface BookFormProps {
@@ -174,6 +174,22 @@ export default function BookForm({ book, isOpen, onClose }: BookFormProps) {
   const onSubmit = (values: BookFormValues) => {
     bookMutation.mutate(values);
   };
+
+  // Adicionando useEffect para monitorar mudanças no livro
+  useEffect(() => {
+    // Se estiver no modo de edição, atualiza os valores do formulário
+    if (isEditing && book) {
+      console.log("Resetando formulário com valores do livro:", book);
+      form.reset({
+        ...book,
+        capa: book.capa || "",
+        descricao: book.descricao || ""
+      });
+      
+      // Atualizar o estado de previewUrl quando o livro muda
+      setPreviewUrl(book.capa || null);
+    }
+  }, [book, form, isEditing]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
